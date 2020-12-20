@@ -176,6 +176,12 @@ static NSDictionary* customCertificatesForHost;
                                                    name:UIWindowDidBecomeHiddenNotification
                                                  object:nil];
 
+      // https://github.com/react-native-community/react-native-webview/issues/934
+      [[NSNotificationCenter defaultCenter] addObserver:self
+                                               selector:@selector(menuWillShow:)
+                                                   name:UIMenuControllerWillShowMenuNotification
+                                                object:[UIMenuController sharedMenuController]];
+
   }
 #endif // !TARGET_OS_OSX
   return self;
@@ -184,6 +190,33 @@ static NSDictionary* customCertificatesForHost;
 - (void)dealloc
 {
   [[NSNotificationCenter defaultCenter] removeObserver:self];
+  // https://github.com/react-native-community/react-native-webview/issues/934
+  [[NSNotificationCenter defaultCenter] removeObserver:self
+                                        name:UIMenuControllerWillShowMenuNotification
+                                        object:[UIMenuController sharedMenuController]];
+}
+
+// https://github.com/react-native-community/react-native-webview/issues/934
+-(void)findUI:(UIView*) view{
+  if([@"UICalloutBar" isEqualToString:[[view class] description]]){
+    [view removeFromSuperview ];
+    return;
+  }
+
+  for(UIView* subview in view.subviews){
+    [self findUI: subview];
+  }
+}
+
+ // https://github.com/react-native-community/react-native-webview/issues/934
+-(void)menuWillShow:(NSNotification *)notification
+{
+  NSArray* windows = [[UIApplication sharedApplication] windows];
+  for(UIWindow* window in windows){
+    if([@"UITextEffectsWindow" isEqualToString:[[window class] description]]){
+      [self findUI:window];
+    }
+  }
 }
 
 /**
